@@ -10,7 +10,7 @@
 
 - [x] Release Speaker2Dubber‘s demo at [here](https://speaker2dubber.github.io/).
 
-- [ ] Release the generated test set.
+- [x] Release the generated test set at [Google Drive](https://drive.google.com/file/d/1FJsGIVLqoQKqnzfnhKBlx9_dek0V7Iiu/view?usp=drive_link) or [Baidu Cloud Drive](https://pan.baidu.com/s/1nxKcBbyCnGPSyz9cpnjW9Q) (Password: mm24).
 
 - [x] Release Speaker2Dubber's train and inference code.
 
