@@ -20,7 +20,7 @@
 
 ## 🌼 Environment
 
-Our python version is ```3.8.18``` and cuda version ```11.5```. It's possible to have other compatible version. 
+Our python version is ```3.8.18``` and cuda version ```11.5```. It's possible to have another compatible version. 
 Both training and inference are implemented with PyTorch on a
 GeForce RTX 4090 GPU.
 
