@@ -63,3 +63,15 @@ The `s` denotes the inference setting (`1` for setting1 which use gt audio as re
 
 ## 🙏 Acknowledgments
 We would like to thank the authors of previous related projects for generously sharing their code and insights: [HPMDubbing](https://github.com/GalaxyCong/HPMDubbing), [Monotonic Align](https://github.com/resemble-ai/monotonic_align), [StyleSpeech](https://github.com/keonlee9420/StyleSpeech), [FastSpeech2](https://github.com/ming024/FastSpeech2), [V2C](https://github.com/chenqi008/V2C), and [HiFi-GAN](https://github.com/jik876/hifi-gan).
+
+
+## 🤝 Ciation
+If you find our work useful, please consider citing:
+```
+@inproceedings{zhang2024speaker,
+    title={From Speaker to Dubber: Movie Dubbing with Prosody and Duration Consistency Learning},
+    author={Zhang, Zhedong and Li, Liang and Cong, Gaoxiang and Haibing, YIN and Gao, Yuhan and Yan, Chenggang and van den Hengel, Anton and Qi, Yuankai},
+    booktitle={ACM Multimedia 2024},
+    year={2024}
+}
+```
