@@ -18,7 +18,7 @@
 
 - [x] Update README.md (How to use).
 
-- [ ] Release the pre-trained checkpoints.
+- [ ] Release the first-stage and second-stage pre-trained checkpoints.
 
 ## 🌼 Environment
 
@@ -64,7 +64,7 @@ The `s` denotes the inference setting (`1` for setting1 which use gt audio as re
 
 
 ## 🙏 Acknowledgments
-We would like to thank the authors of previous related projects for generously sharing their code and insights: [HPMDubbing](https://github.com/GalaxyCong/HPMDubbing), [Monotonic Align](https://github.com/resemble-ai/monotonic_align), [StyleSpeech](https://github.com/keonlee9420/StyleSpeech), [FastSpeech2](https://github.com/ming024/FastSpeech2), [V2C](https://github.com/chenqi008/V2C), and [HiFi-GAN](https://github.com/jik876/hifi-gan).
+We would like to thank the authors of previous related projects for generously sharing their code and insights: [HPMDubbing](https://github.com/GalaxyCong/HPMDubbing), [Monotonic Align](https://github.com/resemble-ai/monotonic_align), [StyleSpeech](https://github.com/keonlee9420/StyleSpeech), [FastSpeech2](https://github.com/ming024/FastSpeech2), [V2C](https://github.com/chenqi008/V2C), [StyleDubber](https://github.com/GalaxyCong/StyleDubber), [PL-BERT](https://github.com/yl4579/PL-BERT), and [HiFi-GAN](https://github.com/jik876/hifi-gan).
 
 
 ## 🤝 Ciation

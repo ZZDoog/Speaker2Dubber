@@ -320,15 +320,8 @@ class Prosody_Consistency_Learning(nn.Module):
         )
 
     def get_pitch_embedding(self, x, target, mask, control, useGT, train_mode=None):
-        if train_mode == 'pretrain':
-            prediction = target
-        else:
-            prediction = self.pitch_predictor(x, mask)  # prediction for each src frame
 
-        # if train_mode == 'finetune':
-        #     self.pitch_embedding.eval()
-
-        if useGT or train_mode == 'pretrain':
+        if useGT:
             embedding = self.pitch_embedding(torch.bucketize(target, self.pitch_bins))
         else:
             prediction = prediction * control
@@ -339,15 +332,7 @@ class Prosody_Consistency_Learning(nn.Module):
 
     def get_energy_embedding(self, x, target, mask, control, useGT, train_mode=None):
         
-        if train_mode == 'pretrain':
-            prediction = target
-        else:
-            prediction = self.energy_predictor(x, mask)  # prediction for each src frame
-
-        # if train_mode == 'finetune':
-        #     self.energy_embedding.eval()
-        
-        if useGT or train_mode == 'pretrain':
+        if useGT:
             embedding = self.energy_embedding(torch.bucketize(target, self.energy_bins))
         else:
             prediction = prediction * control
@@ -370,35 +355,6 @@ class Prosody_Consistency_Learning(nn.Module):
             useGT=None,
             train_mode=None,
     ):  
-        
-        if train_mode == 'pretrain':
-
-            pitch_prediction, pitch_embedding = self.get_pitch_embedding(
-                None, #context_valence, 
-                pitch_target, 
-                src_masks, 
-                p_control, 
-                useGT=True,
-                train_mode=train_mode,
-            )
-
-            energy_prediction, energy_embedding = self.get_energy_embedding(
-                None, #context_arousal, 
-                energy_target, 
-                src_masks, 
-                e_control, 
-                useGT,
-                train_mode=train_mode,
-            )
-
-            output = x + pitch_embedding + energy_embedding
-            # prosody, mel_len = self.length_regulator(output, duration_targets, max_len)
-
-            return (
-                output,
-                pitch_prediction,
-                energy_prediction,
-            )
 
         M = x
         valence = self.emo_fc_2_val(Feature_256)

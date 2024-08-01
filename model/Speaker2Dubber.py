@@ -101,10 +101,7 @@ class Speaker2Dubber(nn.Module):
     ):
         """===========mask for voice, text, lip-movement========"""
         src_masks = get_mask_from_lengths(src_lens, max_src_len)
-        if train_mode == 'pretrain': 
-            visual_masks = None
-        else:
-            visual_masks = get_mask_from_lengths(lip_lens, max_lip_lens)
+        visual_masks = get_mask_from_lengths(lip_lens, max_lip_lens)
 
         if self.use_mel_style_encoder:
             style_vector = self.mel_style_encoder(mels, get_mask_from_lengths(mel_lens, max_mel_len))
@@ -127,55 +124,46 @@ class Speaker2Dubber(nn.Module):
 
         
         """=========Duration Consistency Reasoning========="""
-        if train_mode == 'pretrain':
 
-            prosody, mel_lens = self.length_regulator(output, d_targets, max_mel_len)
-            mel_masks = get_mask_from_lengths(mel_lens, max_mel_len)
+        mean_cof = (d_targets.sum(dim=-1) / lip_lens).mean()
+        norm_lip = lip_motion_embedding / torch.norm(lip_motion_embedding, dim=2, keepdim=True)
+        norm_text = output_text / torch.norm(output_text, dim=2, keepdim=True)
+        norm_text = torch.nan_to_num(norm_text, nan=1)
+        similarity = torch.bmm(norm_lip, norm_text.permute(0, 2, 1))
+        similarity = similarity.permute(0, 2, 1)
+
+        output_text = self.proj_con(output_text.transpose(1, 2))
+
+        cofs = d_targets.sum(dim=1)/lip_lens
+        lip_targets = torch.round(d_targets / cofs)
+        dif = lip_lens - lip_targets.sum(dim=1)
+        max_duration_idx = torch.argmax(lip_targets, dim=1)
+
+        # finetune the length
+        for i in range(lip_lens.shape[0]):
+            lip_targets[i][max_duration_idx[i]] += dif[i]
+
+        gt_similarity = torch.zeros_like(similarity)
+        for i in range(similarity.shape[0]):
+            begin=0
+            for line in range(similarity.shape[1]):
+                end = begin + int(lip_targets[i][line])
+                gt_similarity[i, line, begin:end] = 1
+                begin = end
+
+        d_predictions = similarity.sum(axis=-1).detach() * mean_cof
+
+        if useGT:
+            prosody, mel_lens = self.length_regulator(output, d_targets, None)
+            # mel_lens = torch.sum(d_predictions, dim=1, dtype=torch.int)
+            mel_masks = get_mask_from_lengths(mel_lens)
             ctc_pred_MDA_video, mel_len = self.length_regulator(ctc_pred_MDA_video, d_targets, max_mel_len)
-            duration_rounded = d_targets
-
 
         else:
-
-            mean_cof = (d_targets.sum(dim=-1) / lip_lens).mean()
-            norm_lip = lip_motion_embedding / torch.norm(lip_motion_embedding, dim=2, keepdim=True)
-            norm_text = output_text / torch.norm(output_text, dim=2, keepdim=True)
-            norm_text = torch.nan_to_num(norm_text, nan=1)
-            similarity = torch.bmm(norm_lip, norm_text.permute(0, 2, 1))
-            similarity = similarity.permute(0, 2, 1)
-
-            output_text = self.proj_con(output_text.transpose(1, 2))
-
-            cofs = d_targets.sum(dim=1)/lip_lens
-            lip_targets = torch.round(d_targets / cofs)
-            dif = lip_lens - lip_targets.sum(dim=1)
-            max_duration_idx = torch.argmax(lip_targets, dim=1)
-
-            # finetune the length
-            for i in range(lip_lens.shape[0]):
-                lip_targets[i][max_duration_idx[i]] += dif[i]
-
-            gt_similarity = torch.zeros_like(similarity)
-            for i in range(similarity.shape[0]):
-                begin=0
-                for line in range(similarity.shape[1]):
-                    end = begin + int(lip_targets[i][line])
-                    gt_similarity[i, line, begin:end] = 1
-                    begin = end
-
-            d_predictions = similarity.sum(axis=-1).detach() * mean_cof
-
-            if useGT:
-                prosody, mel_lens = self.length_regulator(output, d_targets, None)
-                # mel_lens = torch.sum(d_predictions, dim=1, dtype=torch.int)
-                mel_masks = get_mask_from_lengths(mel_lens)
-                ctc_pred_MDA_video, mel_len = self.length_regulator(ctc_pred_MDA_video, d_targets, max_mel_len)
-
-            else:
-                prosody, mel_lens = self.length_regulator(output, d_predictions * d_control, None)
-                # mel_lens = torch.sum(d_predictions, dim=1, dtype=torch.int)
-                mel_masks = get_mask_from_lengths(mel_lens)
-                ctc_pred_MDA_video, mel_len = self.length_regulator(ctc_pred_MDA_video, d_predictions, None)
+            prosody, mel_lens = self.length_regulator(output, d_predictions * d_control, None)
+            # mel_lens = torch.sum(d_predictions, dim=1, dtype=torch.int)
+            mel_masks = get_mask_from_lengths(mel_lens)
+            ctc_pred_MDA_video, mel_len = self.length_regulator(ctc_pred_MDA_video, d_predictions, None)
 
             
         fusion_output = prosody
