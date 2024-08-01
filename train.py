@@ -60,8 +60,7 @@ def main(args, configs):
     encoder_emo.eval()
     encoder_speaker.train()
 
-    Loss = Speaker2Dubber_Loss(preprocess_config, model_config, vocoder=vocoder, vocoder_infer=vocoder_infer,
-                           encoder_speaker=encoder_speaker).to(device)
+    Loss = Speaker2Dubber_Loss(preprocess_config, model_config).to(device)
     print("Number of Speaker2Dubber Parameters:", num_param)
 
     # Load vocie encoder (compute the wav embedding for accuracy only)
