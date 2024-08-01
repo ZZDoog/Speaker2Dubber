@@ -130,7 +130,7 @@ class Speaker2Dubber_Loss(nn.Module):
 
             emo_loss = torch.tensor([0])
             total_loss = (
-                            mel_loss + postnet_mel_loss + pitch_loss + energy_loss + duration_loss +
+                            mel_loss + postnet_mel_loss + pitch_loss + energy_loss + 0.1 * duration_loss +
                             pitch_loss_mae + energy_loss_mae + mse_loss_v2c1 + mse_loss_v2c2
                             + 0.01*CTC_loss_MDA_video + 0.01*CTC_loss_MEL
                         )
@@ -148,7 +148,7 @@ class Speaker2Dubber_Loss(nn.Module):
                 0.01*CTC_loss_MDA_video,
                 0.01*CTC_loss_MEL,
                 torch.Tensor([0]), # Speaker Loss for log and Tensorboard
-                duration_loss,
+                0.1* duration_loss,
                 torch.Tensor([0])
             )
 

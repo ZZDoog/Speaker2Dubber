@@ -222,7 +222,7 @@ def assess_spk_emo(encoder_spk, encoder_emo, sampling_rate, samples_path,
 def evaluate(model, step, configs, logger=None, vocoder=None, encoder_spk=None, \
              encoder_emo=None, train_samples_path=None, val_samples_path=None, useGT=False):
     # preprocess_config, model_config, train_config = configs
-    preprocess_config, model_config, train_config, preprocess_config2 = configs
+    preprocess_config2, model_config, train_config = configs
 
     # Get dataset
     dataset_train = Dataset(

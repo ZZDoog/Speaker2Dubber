@@ -321,6 +321,7 @@ class Prosody_Consistency_Learning(nn.Module):
 
     def get_pitch_embedding(self, x, target, mask, control, useGT, train_mode=None):
 
+        prediction = self.pitch_predictor(x, mask)
         if useGT:
             embedding = self.pitch_embedding(torch.bucketize(target, self.pitch_bins))
         else:
@@ -332,6 +333,7 @@ class Prosody_Consistency_Learning(nn.Module):
 
     def get_energy_embedding(self, x, target, mask, control, useGT, train_mode=None):
         
+        prediction = self.energy_predictor(x, mask)
         if useGT:
             embedding = self.energy_embedding(torch.bucketize(target, self.energy_bins))
         else:

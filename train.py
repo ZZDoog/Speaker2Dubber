@@ -90,7 +90,7 @@ def main(args, configs):
 
     # Copy the Script and config
     file_to_save = ['train.py', 'Inference.py', 'dataset.py','evaluate.py',
-                    'Inference_multi_pro.py', 'mcd.py', 'prepare_align.py', 'preprocess.py']
+                     'mcd.py', 'prepare_align.py', 'preprocess.py']
     folder_to_copy = ['model', 'transformer', 'config']
 
     for x in file_to_save:
