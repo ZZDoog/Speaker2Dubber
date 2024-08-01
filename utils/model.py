@@ -17,8 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def get_model(args, configs, device, train=False):
     # (preprocess_config, model_config, train_config) = configs
-    (preprocess_config, model_config, train_config, preprocess_config2) = configs
-    model = Speaker2Dubber(preprocess_config, preprocess_config2, model_config).to(device)
+    (preprocess_config, model_config, train_config) = configs
+    model = Speaker2Dubber(preprocess_config, model_config).to(device)
     if args.restore_step:
         ckpt_path = os.path.join(
             train_config["path"]["ckpt_path"].format(train_config['expname']),
