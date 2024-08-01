@@ -10,12 +10,15 @@ LRELU_SLOPE = 0.1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+from monotonic_align import mask_from_lens, maximum_path
+
 class Speaker2Dubber(nn.Module):
     """ From Speaker to Dubber """
-    def __init__(self, preprocess_config, preprocess_config2, model_config):
+    def __init__(self, preprocess_config, model_config):
         super(Speaker2Dubber, self).__init__()
         self.model_config = model_config
         self.dataset_name = preprocess_config["dataset"]
+        # self.style_encoder = MelStyleEncoder(model_config)  # In fact, during conducting expriment, we remove this auxiliary style encoder (V2C-Net from Chenqi, et.al). Specifically, we only use the pre-trained GE2E model to gurateen only style information without content information, following the setting of paper. 
         self.phoneme_encoder = Encoder(model_config)
         self.lip_encoder = Lip_Encoder(model_config)
         self.phoneme_proj_con = nn.Conv1d(256, 256, kernel_size=1, padding=0, bias=False)
@@ -49,7 +52,7 @@ class Speaker2Dubber(nn.Module):
                 self.n_speaker = len(json.load(f))
             with open(
                     os.path.join(
-                        preprocess_config2["path"]["preprocessed_path"], "speakers.json"
+                        preprocess_config["path"]["preprocessed_path"], "speakers.json"
                     ),
                     "r",
             ) as f:
@@ -119,7 +122,7 @@ class Speaker2Dubber(nn.Module):
 
     
         """=========Prosody Consistency Learning========="""
-        (output, p_predictions, e_predictions,) = self.PCL(output, src_masks, visual_masks, p_targets, e_targets,
+        (output, p_predictions, e_predictions,) = self.PCL(output_phoneme, src_masks, visual_masks, p_targets, e_targets,
                                                         Feature_256, p_control, e_control, useGT, train_mode=train_mode)
 
         
@@ -127,15 +130,14 @@ class Speaker2Dubber(nn.Module):
 
         mean_cof = (d_targets.sum(dim=-1) / lip_lens).mean()
         norm_lip = lip_motion_embedding / torch.norm(lip_motion_embedding, dim=2, keepdim=True)
-        norm_text = output_text / torch.norm(output_text, dim=2, keepdim=True)
+        text_norm_base = torch.norm(output_phoneme, dim=2, keepdim=True)
+        norm_text = output_phoneme / (text_norm_base+1)
         norm_text = torch.nan_to_num(norm_text, nan=1)
         similarity = torch.bmm(norm_lip, norm_text.permute(0, 2, 1))
         similarity = similarity.permute(0, 2, 1)
 
-        output_text = self.proj_con(output_text.transpose(1, 2))
-
         cofs = d_targets.sum(dim=1)/lip_lens
-        lip_targets = torch.round(d_targets / cofs)
+        lip_targets = torch.round(d_targets / cofs.unsqueeze(1))
         dif = lip_lens - lip_targets.sum(dim=1)
         max_duration_idx = torch.argmax(lip_targets, dim=1)
 
@@ -151,7 +153,9 @@ class Speaker2Dubber(nn.Module):
                 gt_similarity[i, line, begin:end] = 1
                 begin = end
 
-        d_predictions = similarity.sum(axis=-1).detach() * mean_cof
+        mask_sim = mask_from_lens(similarity, src_lens, lip_lens)
+        alignment = maximum_path(similarity.contiguous(), mask_sim)  # (B, S, T)
+        d_predictions = alignment.sum(axis=-1).detach() * mean_cof
 
         if useGT:
             prosody, mel_lens = self.length_regulator(output, d_targets, None)
