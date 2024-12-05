@@ -70,10 +70,22 @@ We would like to thank the authors of previous related projects for generously s
 ## 🤝 Ciation
 If you find our work useful, please consider citing:
 ```
-@inproceedings{zhang2024speaker,
-    title={From Speaker to Dubber: Movie Dubbing with Prosody and Duration Consistency Learning},
-    author={Zhang, Zhedong and Li, Liang and Cong, Gaoxiang and Haibing, YIN and Gao, Yuhan and Yan, Chenggang and van den Hengel, Anton and Qi, Yuankai},
-    booktitle={ACM Multimedia 2024},
-    year={2024}
+@inproceedings{zhang-etal-2024-speaker2dubber,
+  author       = {Zhedong Zhang and
+                  Liang Li and
+                  Gaoxiang Cong and
+                  Haibing Yin and
+                  Yuhan Gao and
+                  Chenggang Yan and
+                  Anton van den Hengel and
+                  Yuankai Qi},
+  title        = {From Speaker to Dubber: Movie Dubbing with Prosody and Duration Consistency
+                  Learning},
+  booktitle    = {Proceedings of the 32nd {ACM} International Conference on Multimedia,
+                  {MM} 2024, Melbourne, VIC, Australia, 28 October 2024 - 1 November
+                  2024},
+  pages        = {7523--7532},
+  publisher    = {{ACM}},
+  year         = {2024},
 }
 ```
