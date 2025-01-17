@@ -78,10 +78,17 @@ class Speaker2Dubber_Loss(nn.Module):
         log_duration_targets.requires_grad = False
         ctc_pred_MDA_video =  CTC_ALL[0]
         ctc_pred_mel =  CTC_ALL[1]
-        similarity = SIMILARITY_ALL[0]
-        gt_similarity = SIMILARITY_ALL[1]
 
-        duration_loss = torch.sum(gt_similarity - gt_similarity*similarity)
+        if not self.model_config['train_mode'] == 'pretrain':
+            similarity = SIMILARITY_ALL[0]
+            gt_similarity = SIMILARITY_ALL[1]
+            duration_predictions = SIMILARITY_ALL[2]
+            # duration_loss = torch.sum(gt_similarity - gt_similarity*similarity)
+            # duration_loss = torch.tensor([0]).cuda()
+            duration_loss = torch.abs(gt_similarity-similarity).mean()
+            
+        else:
+            duration_loss = torch.tensor([0]).cuda()
 
         if self.model_config['train_mode'] == 'pretrain':
             CTC_loss_MDA_video = torch.tensor([0]).cuda()
@@ -94,6 +101,8 @@ class Speaker2Dubber_Loss(nn.Module):
         pitch_predictions = pitch_predictions.masked_select(src_masks)
         pitch_targets = pitch_targets.masked_select(src_masks)
         energy_predictions = energy_predictions.masked_select(src_masks)
+        log_duration_targets = log_duration_targets.masked_select(src_masks)
+        duration_predictions = duration_predictions.masked_select(src_masks)
         energy_targets = energy_targets.masked_select(src_masks)
         mel_predictions = mel_predictions.masked_select(mel_masks.unsqueeze(-1))
         postnet_mel_predictions = postnet_mel_predictions.masked_select(mel_masks.unsqueeze(-1))
@@ -102,8 +111,10 @@ class Speaker2Dubber_Loss(nn.Module):
         postnet_mel_loss = self.mae_loss(postnet_mel_predictions, mel_targets)
         pitch_loss = self.mse_loss(pitch_predictions, pitch_targets)
         energy_loss = self.mse_loss(energy_predictions, energy_targets)
+        duration_loss_mse = self.mse_loss(duration_predictions, log_duration_targets)
         pitch_loss_mae = self.mae_loss(pitch_predictions, pitch_targets)
         energy_loss_mae = self.mae_loss(energy_predictions, energy_targets)
+        duration_loss_mae = self.mse_loss(duration_predictions, log_duration_targets)
 
         if self.loss_model == "Chem":
             total_loss = (
@@ -130,7 +141,7 @@ class Speaker2Dubber_Loss(nn.Module):
 
             emo_loss = torch.tensor([0])
             total_loss = (
-                            mel_loss + postnet_mel_loss + pitch_loss + energy_loss + 0.1 * duration_loss +
+                            mel_loss + postnet_mel_loss + pitch_loss + energy_loss + 10 * duration_loss + duration_loss_mse + duration_loss_mae +
                             pitch_loss_mae + energy_loss_mae + mse_loss_v2c1 + mse_loss_v2c2
                             + 0.01*CTC_loss_MDA_video + 0.01*CTC_loss_MEL
                         )
@@ -148,8 +159,8 @@ class Speaker2Dubber_Loss(nn.Module):
                 0.01*CTC_loss_MDA_video,
                 0.01*CTC_loss_MEL,
                 torch.Tensor([0]), # Speaker Loss for log and Tensorboard
-                0.1* duration_loss,
-                torch.Tensor([0])
+                10* duration_loss,
+                duration_loss_mae + duration_loss_mae
             )
 
 

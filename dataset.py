@@ -66,7 +66,7 @@ class Dataset(Dataset):
         else:
             spk_path = os.path.join(
                 self.preprocessed_path,
-                "spk2_vc",
+                "spk2",
                 "{}-spk-{}.npy".format(speaker, basename),
             )
         spk = np.load(spk_path)
@@ -171,6 +171,9 @@ class Dataset(Dataset):
                     "{}-face-{}.npy".format(speaker, basename.split('-')[-1]),
                 )
             lip_embedding = np.load(lip_embedding_path)
+
+        if not mel.shape[0] == duration.sum():
+            print('{} duration mismatch, duration sum: {}, mel_len: {}'.format(basename, duration.sum(), mel.shape[0]))
 
         sample = {
             "id": basename,
@@ -453,7 +456,7 @@ class PretrainDataset(Dataset):
         else:
             spk_path = os.path.join(
                 self.preprocessed_path,
-                "spk2_vc",
+                "spk2",
                 "{}-spk-{}.npy".format(speaker, basename),
             )
         spk = np.load(spk_path)
@@ -520,6 +523,9 @@ class PretrainDataset(Dataset):
             "{}-duration-{}.npy".format(speaker, basename),
         )
         duration = np.load(duration_path)
+
+        if not mel.shape[0] == duration.sum():
+            print('{} duration mismatch, duration sum: {}, mel_len: {}'.format(basename, duration.sum(), mel.shape[0]))
 
         feature_256 = None
         # if not self.is_grid:

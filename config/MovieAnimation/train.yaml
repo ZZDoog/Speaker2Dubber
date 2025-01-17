@@ -1,4 +1,5 @@
-expname: debug
+expname: official
+
 path:
 
   ckpt_path: "./output/{}/ckpt"
@@ -8,7 +9,7 @@ path:
 
 
 optimizer:
-  batch_size: 32 # 64 for denoise 128 for grid
+  batch_size: 32 # 32 for denoise 128 for grid
   betas: [0.9, 0.98]
   eps: 0.000000001
   weight_decay: 0.0000001 
@@ -21,6 +22,6 @@ optimizer:
 step:
   total_step: 900000
   log_step: 100
-  synth_step: 2500
-  val_step: 2500
-  save_step: 25000
+  synth_step: 1500
+  val_step: 2000
+  save_step: 10000

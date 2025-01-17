@@ -95,7 +95,10 @@ Affective_Prosody_Adaptor:
   cascade: Ture
   Use_Scale_attention: True
 
-train_mode: 'finetune'
+# train_model: 'pretrain' :TTS Pre-train Task in First-stage
+# train_mode: 'other'  : Train without Multi-task Pre-train
+# train_mode: 'finetune'  : Train with Multi-task Pre-train
 
-pretrain_ckpt_path: 'output/2024_3_6_pretrain_v2/ckpt/100000.pth.tar'
-# pretrain_ckpt_path: 'output/2024_5_10_pretrain_new_spk/ckpt/100000.pth.tar'
+train_mode: 'finetune'
+pretrain_ckpt_path: 'output/official/ckpt/50000.pth.tar'
+

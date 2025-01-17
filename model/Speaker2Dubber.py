@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformer import Decoder, PostNet, Encoder, Lip_Encoder
-from .modules import LengthRegulator, MelStyleEncoder, Prosody_Consistency_Learning, CTC_classifier_MDA
+from .modules import LengthRegulator, MelStyleEncoder, Prosody_Consistency_Learning, CTC_classifier_MDA, corr_mask, VariancePredictor
 from utils.tools import get_mask_from_lengths, generate_square_subsequent_mask
 LRELU_SLOPE = 0.1
 
@@ -22,6 +22,7 @@ class Speaker2Dubber(nn.Module):
         self.phoneme_encoder = Encoder(model_config)
         self.lip_encoder = Lip_Encoder(model_config)
         self.phoneme_proj_con = nn.Conv1d(256, 256, kernel_size=1, padding=0, bias=False)
+        self.phoneme_proj_con_align = nn.Conv1d(256, 256, kernel_size=1, padding=0, bias=False)
         self.CTC_classifier_MDA = CTC_classifier_MDA(model_config["Symbols"]["phonemenumber"])  # len(symbols)
         self.PCL = Prosody_Consistency_Learning(preprocess_config, model_config)
         self.decoder = Decoder(model_config)
@@ -39,6 +40,12 @@ class Speaker2Dubber(nn.Module):
         
         self.Identity_enhancement = model_config["Enhancement"]["Identity_enhancement"]
         self.Content_enhancement = model_config["Enhancement"]["Content_enhancement"]
+
+        self.acoustic2alignment = nn.Linear(256, 256)
+        self.align_attn = nn.MultiheadAttention(256, 8, dropout=0.1)
+        self.attn = nn.MultiheadAttention(256, 8, dropout=0.1)
+        self.duration_predictor = VariancePredictor(model_config)
+        self.fusion_lip_text = nn.Linear(512, 256)
 
         self.pro_output_os = nn.Conv1d(512, 256, kernel_size=1, padding=0, bias=False)
         self.n_speaker = 1
@@ -74,6 +81,7 @@ class Speaker2Dubber(nn.Module):
                 padding_idx=self.n_emotion,
             )
         self.duration_search = False
+        self.alpha = 0.1
         
         
     def forward(
@@ -104,7 +112,10 @@ class Speaker2Dubber(nn.Module):
     ):
         """===========mask for voice, text, lip-movement========"""
         src_masks = get_mask_from_lengths(src_lens, max_src_len)
-        visual_masks = get_mask_from_lengths(lip_lens, max_lip_lens)
+        if train_mode == 'pretrain':
+            visual_masks=None
+        else:
+            visual_masks = get_mask_from_lengths(lip_lens, max_lip_lens)
 
         if self.use_mel_style_encoder:
             style_vector = self.mel_style_encoder(mels, get_mask_from_lengths(mel_lens, max_mel_len))
@@ -112,8 +123,14 @@ class Speaker2Dubber(nn.Module):
 
 
         """===========get phoneme embedding and lip motion embedding========"""
+        if train_mode == 'finetune':
+            self.phoneme_encoder.eval()
+            self.phoneme_proj_con.eval()
+            # self.decoder.eval()
+
         phoneme_embeddings = self.phoneme_encoder(texts, spks, None, src_masks)
-        lip_motion_embedding = self.lip_encoder(lip_embedding, visual_masks)
+        if not train_mode == 'pretrain':
+            lip_motion_embedding = self.lip_encoder(lip_embedding, visual_masks)
 
         output_phoneme = self.phoneme_proj_con(phoneme_embeddings.transpose(1, 2))
         output_phoneme = output_phoneme.transpose(1, 2)
@@ -122,42 +139,76 @@ class Speaker2Dubber(nn.Module):
 
     
         """=========Prosody Consistency Learning========="""
-        (output, p_predictions, e_predictions,) = self.PCL(output_phoneme, src_masks, visual_masks, p_targets, e_targets,
+        (output, p_predictions, e_predictions) = self.PCL(output_phoneme, src_masks, visual_masks, p_targets, e_targets,
                                                         Feature_256, p_control, e_control, useGT, train_mode=train_mode)
 
         
         """=========Duration Consistency Reasoning========="""
+        if train_mode == 'pretrain':
+            d_predictions = d_targets
 
-        mean_cof = (d_targets.sum(dim=-1) / lip_lens).mean()
-        norm_lip = lip_motion_embedding / torch.norm(lip_motion_embedding, dim=2, keepdim=True)
-        text_norm_base = torch.norm(output_phoneme, dim=2, keepdim=True)
-        norm_text = output_phoneme / (text_norm_base+1)
-        norm_text = torch.nan_to_num(norm_text, nan=1)
-        similarity = torch.bmm(norm_lip, norm_text.permute(0, 2, 1))
-        similarity = similarity.permute(0, 2, 1)
+        else: 
 
-        cofs = d_targets.sum(dim=1)/lip_lens
-        lip_targets = torch.round(d_targets / cofs.unsqueeze(1))
-        dif = lip_lens - lip_targets.sum(dim=1)
-        max_duration_idx = torch.argmax(lip_targets, dim=1)
+            output_phoneme_align = self.phoneme_proj_con_align(phoneme_embeddings.transpose(1, 2))
+            output_phoneme_align = output_phoneme_align.transpose(1, 2)
+            output_phoneme_align, _ = self.align_attn(query=output_phoneme_align.transpose(0, 1), key=lip_motion_embedding.transpose(0, 1),
+                                            value=lip_motion_embedding.transpose(0, 1), key_padding_mask=visual_masks)
+            output_phoneme_align = output_phoneme_align.transpose(0,1)
 
-        # finetune the length
-        for i in range(lip_lens.shape[0]):
-            lip_targets[i][max_duration_idx[i]] += dif[i]
+            mean_cof = (d_targets.sum(dim=-1) / lip_lens).mean()
+            norm_lip = lip_motion_embedding / torch.norm(lip_motion_embedding, dim=2, keepdim=True)
+            # text_feature = self.acoustic2alignment(output)
+            text_norm_base = torch.norm(output_phoneme_align, dim=2, keepdim=True)
+            norm_text = output_phoneme / (text_norm_base+1)
+            # norm_text = torch.nan_to_num(norm_text, nan=1)
+            similarity = torch.bmm(norm_lip, norm_text.permute(0, 2, 1))
+            similarity = similarity.permute(0, 2, 1)
 
-        gt_similarity = torch.zeros_like(similarity)
-        for i in range(similarity.shape[0]):
-            begin=0
-            for line in range(similarity.shape[1]):
-                end = begin + int(lip_targets[i][line])
-                gt_similarity[i, line, begin:end] = 1
-                begin = end
+            cofs = d_targets.sum(dim=1)/lip_lens
+            lip_targets = torch.round(d_targets / cofs.unsqueeze(1))
+            dif = lip_lens - lip_targets.sum(dim=1)
+            max_duration_idx = torch.argmax(lip_targets, dim=1)
 
-        mask_sim = mask_from_lens(similarity, src_lens, lip_lens)
-        alignment = maximum_path(similarity.contiguous(), mask_sim)  # (B, S, T)
-        d_predictions = alignment.sum(axis=-1).detach() * mean_cof
+            # finetune the length
+            for i in range(lip_lens.shape[0]):
+                lip_targets[i][max_duration_idx[i]] += dif[i]
 
-        if useGT:
+            gt_similarity = torch.zeros_like(similarity)
+            for i in range(similarity.shape[0]):
+                begin=0
+                for line in range(similarity.shape[1]):
+                    end = begin + int(lip_targets[i][line])
+                    gt_similarity[i, line, begin:end] = 1
+                    begin = end
+
+                    mask_sim = mask_from_lens(similarity, src_lens, lip_lens)
+
+            # similarity = similarity * corr_mask(similarity, src_lens, lip_lens)
+            alignment = maximum_path(similarity.contiguous(), mask_sim)  # (B, S, T)
+
+            # Duration Balance to smooth the training
+            output_fusion, _ = self.attn(query=output_phoneme_align.transpose(0, 1), key=lip_motion_embedding.transpose(0, 1),
+                                            value=lip_motion_embedding.transpose(0, 1), key_padding_mask=visual_masks)
+            output_fusion = output_fusion.transpose(0,1)
+
+            duration_feature = torch.cat([output_fusion, output_phoneme_align], dim=2)
+            duration_feature = self.fusion_lip_text(duration_feature)
+
+            d_predictions_balance = self.duration_predictor(duration_feature, src_masks)
+            duration_sum = lip_lens*mean_cof
+            duration_logits = (torch.exp(d_predictions_balance) - 1) / (torch.exp(d_predictions_balance) - 1).sum(dim=1, keepdim=True)
+            duration_adjusted = duration_logits*duration_sum.unsqueeze(1)
+
+            d_predictions = alignment.sum(axis=-1).detach() * mean_cof * self.alpha + duration_adjusted * (1-self.alpha)
+
+            d_predictions = torch.clamp(
+                (torch.round(d_predictions) * d_control),
+                min=0,
+            )
+
+
+        if useGT or train_mode == 'pretrain':
+        # if True:
             prosody, mel_lens = self.length_regulator(output, d_targets, None)
             # mel_lens = torch.sum(d_predictions, dim=1, dtype=torch.int)
             mel_masks = get_mask_from_lengths(mel_lens)
@@ -180,20 +231,36 @@ class Speaker2Dubber(nn.Module):
         postnet_output = self.postnet(fusion_output) + fusion_output
         ctc_loss_all = [ctc_pred_MDA_video, ctc_pred_mel]
 
-        return (
-            fusion_output,
-            postnet_output,
-            p_predictions,
-            e_predictions,
-            # d_predictions,
-            [similarity, gt_similarity],
-            src_masks,
-            mel_masks,
-            src_lens,
-            mel_lens,
-            ctc_loss_all,
-            max_src_len,
-        )
+        if train_mode == 'pretrain':
+            return (
+                fusion_output,
+                postnet_output,
+                p_predictions,
+                e_predictions,
+                d_predictions,
+                src_masks,
+                mel_masks,
+                src_lens,
+                mel_lens,
+                ctc_loss_all,
+                max_src_len,
+            )
+
+        else:
+            return (
+                fusion_output,
+                postnet_output,
+                p_predictions,
+                e_predictions,
+                # d_predictions,
+                [similarity, gt_similarity, d_predictions_balance],
+                src_masks,
+                mel_masks,
+                src_lens,
+                mel_lens,
+                ctc_loss_all,
+                max_src_len,
+            )
 
 class CTC_classifier_mel(nn.Module):
     def __init__(self, num_classes):

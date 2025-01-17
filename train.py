@@ -134,6 +134,11 @@ def main(args, configs):
                 # Forward
                 output = model(*(batch[2:]), useGT=True, train_mode=model_config['train_mode'], epoch=epoch)
 
+                # if not output[8].max() == output[0].shape[1]:
+                #     print('duration mismatch in dataset')
+                #     optimizer.zero_grad()
+                #     continue
+
                 # Cal Loss
                 losses = Loss(batch, output)
                 total_loss = losses[0]
@@ -191,21 +196,22 @@ def main(args, configs):
                         sampling_rate=sampling_rate,
                         tag="Training/step_{}_{}_synthesized".format(step, tag),
                     )
+                    print('Synthesis Step, synthesis Done.')
 
-                if step % val_step == 0 and step!=0:
-                    model.eval()
-                    if model_config['train_mode'] == 'pretrain':
-                        message= evaluate_v2(model, step, configs, val_logger, \
-                            vocoder, Loss)
-                    else:
-                        message= evaluate(model, step, configs, val_logger, \
-                            vocoder, encoder_spk, encoder_emo, \
-                            train_samples_path, val_samples_path, useGT=False)
+                # if step % val_step == 0 and step!=0:
+                #     model.eval()
+                #     if model_config['train_mode'] == 'pretrain':
+                #         message= evaluate_v2(model, step, configs, val_logger, \
+                #             vocoder, Loss)
+                #     else:
+                #         message= evaluate(model, step, configs, val_logger, \
+                #             vocoder, encoder_spk, encoder_emo, \
+                #             train_samples_path, val_samples_path, useGT=False)
                     
-                    with open(os.path.join(val_log_path, "log.txt"), "a") as f:
-                        f.write(message + "\n")
-                    outer_bar.write(message)
-                    model.train()
+                #     with open(os.path.join(val_log_path, "log.txt"), "a") as f:
+                #         f.write(message + "\n")
+                #     outer_bar.write(message)
+                #     model.train()
 
                 if train_config['expname'] != 'debug':
                     if step % save_step == 0 and step!=0:

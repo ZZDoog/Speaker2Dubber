@@ -2,3 +2,6 @@ output/
 *.pyc
 */*.pyc
 __pycache__/
+.vscode/
+evaluate/
+hifi_gan/

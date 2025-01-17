@@ -77,12 +77,12 @@ def generate_result(preprocess_config2, model_config, model, vocoder, loader, sa
 
 
 def Inference_wav(model, step, configs, vocoder=None, setting=None):
-    preprocess_config, model_config, train_config, preprocess_config2 = configs
+    preprocess_config2, model_config, train_config = configs
     useGT = False
 
     val_samples_path = train_config["path"]["result_path"].format(train_config['expname'])
     val_samples_path = "{}_setting{}_{}".format(val_samples_path, setting, step)
-    os.makedirs(val_samples_path, exist_ok=False)
+    os.makedirs(val_samples_path, exist_ok=True)
 
 
     sampling_rate = preprocess_config2["preprocessing"]["audio"]["sampling_rate"]
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     preprocess_config2 = yaml.load(
         open(preprocess_config_path, "r"), Loader=yaml.FullLoader
     )
-    configs = (preprocess_config, model_config, train_config, preprocess_config2)
+    configs = (preprocess_config, model_config, train_config)
 
     # Get model
     model = get_model(args, configs, device, train=False).to(device)

@@ -226,7 +226,6 @@ class CTC_classifier_MDA(nn.Module):
     
 
 class Prosody_Consistency_Learning(nn.Module):
-    """Variance Adaptor"""
 
     def __init__(self, preprocess_config, model_config):
         super(Prosody_Consistency_Learning, self).__init__()
@@ -321,7 +320,11 @@ class Prosody_Consistency_Learning(nn.Module):
 
     def get_pitch_embedding(self, x, target, mask, control, useGT, train_mode=None):
 
-        prediction = self.pitch_predictor(x, mask)
+        if train_mode == 'pretrain':
+            prediction = target
+        else:
+            prediction = self.pitch_predictor(x, mask)  # prediction for each src frame
+
         if useGT:
             embedding = self.pitch_embedding(torch.bucketize(target, self.pitch_bins))
         else:
@@ -333,7 +336,11 @@ class Prosody_Consistency_Learning(nn.Module):
 
     def get_energy_embedding(self, x, target, mask, control, useGT, train_mode=None):
         
-        prediction = self.energy_predictor(x, mask)
+        if train_mode == 'pretrain':
+            prediction = target
+        else:
+            prediction = self.pitch_predictor(x, mask)  # prediction for each src frame
+            
         if useGT:
             embedding = self.energy_embedding(torch.bucketize(target, self.energy_bins))
         else:
@@ -357,6 +364,36 @@ class Prosody_Consistency_Learning(nn.Module):
             useGT=None,
             train_mode=None,
     ):  
+
+        if train_mode == 'pretrain':
+
+            pitch_prediction, pitch_embedding = self.get_pitch_embedding(
+                None, #context_valence, 
+                pitch_target, 
+                src_masks, 
+                p_control, 
+                useGT=True,
+                train_mode=train_mode,
+            )
+
+            energy_prediction, energy_embedding = self.get_energy_embedding(
+                None, #context_arousal, 
+                energy_target, 
+                src_masks, 
+                e_control, 
+                useGT,
+                train_mode=train_mode,
+            )
+
+            output = x + pitch_embedding + energy_embedding
+            # prosody, mel_len = self.length_regulator(output, duration_targets, max_len)
+
+            return (
+                output,
+                pitch_prediction,
+                energy_prediction,
+            )
+
 
         M = x
         valence = self.emo_fc_2_val(Feature_256)
@@ -410,6 +447,27 @@ class GradientReversalFunction(torch.autograd.Function):
         lambda_ = grads.new_tensor(lambda_)
         dx = -lambda_ * grads
         return dx, None
+    
+
+def corr_mask(sim_matrix, text_lens, lip_lens, bandwidth=2):
+
+    N = sim_matrix.shape[0]
+    
+    mask = torch.zeros_like(sim_matrix, dtype=torch.float32)
+    
+    for i in range(N):
+
+        text_len = text_lens[i].item()
+        lip_len = lip_lens[i].item()
+
+        ratio = lip_len / text_len
+        
+        for t in range(text_len):
+            for l in range(lip_len):
+                if abs((t * ratio) - l) <= bandwidth:
+                    mask[i, t, l] = 1.0
+                    
+    return mask
 
 
 class GradientReversal(torch.nn.Module):

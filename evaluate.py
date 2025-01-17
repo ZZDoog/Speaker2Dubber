@@ -344,7 +344,7 @@ def evaluate(model, step, configs, logger=None, vocoder=None, encoder_spk=None, 
 
 def evaluate_v2(model, step, configs, logger=None, vocoder=None, Loss=None):
 
-    preprocess_config, model_config, train_config, preprocess_config2 = configs
+    preprocess_config2, model_config, train_config = configs
 
     # Get dataset
     if model_config['train_mode'] == 'pretrain':
@@ -392,7 +392,7 @@ def evaluate_v2(model, step, configs, logger=None, vocoder=None, Loss=None):
             output,
             vocoder,
             model_config,
-            preprocess_config,
+            preprocess_config2,
         )
 
         log(logger, step, losses=losses, LM=model_config['loss_function']['model'])
@@ -401,7 +401,7 @@ def evaluate_v2(model, step, configs, logger=None, vocoder=None, Loss=None):
             fig=fig,
             tag="Validation/step_{}_{}".format(step, tag),
         )
-        sampling_rate = preprocess_config["preprocessing"]["audio"]["sampling_rate"]
+        sampling_rate = preprocess_config2["preprocessing"]["audio"]["sampling_rate"]
         log(
             logger,
             audio=wav_reconstruction,
