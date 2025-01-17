@@ -41,10 +41,30 @@ def get_model(args, configs, device, train=False):
     
     if model_config['train_mode'] == 'finetune' and train:
         ckpt_path = model_config['pretrain_ckpt_path']
-
-        print("{} loaded".format(ckpt_path))
-        
         ckpt = torch.load(ckpt_path)
+
+        # Load the pretrained phoneme encoder from the ckpt
+        # pretrained_encoder_state_dict = {k.replace('MDA.encoder.', ''): v
+        #                   for k, v in ckpt['model'].items() if k.startswith('MDA.encoder.')}
+        # phoneme_encoder_state_dict = model.phoneme_encoder.state_dict()
+        # for k in pretrained_encoder_state_dict:
+        #     if k in phoneme_encoder_state_dict:
+        #         phoneme_encoder_state_dict[k] = pretrained_encoder_state_dict[k]
+        #     else:
+        #         print(f"Warning: {k} not found in Speaker2Dubber.encoder. Skipping.")
+        # model.phoneme_encoder.load_state_dict(phoneme_encoder_state_dict)
+
+        # Load the pretrained decoder from the ckpt
+        # pretrained_encoder_state_dict = {k.replace('decoder.', ''): v
+        #                   for k, v in ckpt['model'].items() if k.startswith('decoder.')}
+        # phoneme_encoder_state_dict = model.decoder.state_dict()
+        # for k in pretrained_encoder_state_dict:
+        #     if k in phoneme_encoder_state_dict:
+        #         phoneme_encoder_state_dict[k] = pretrained_encoder_state_dict[k]
+        #     else:
+        #         print(f"Warning: {k} not found in Speaker2Dubber.encoder. Skipping.")
+        # model.decoder.load_state_dict(phoneme_encoder_state_dict)
+        
         # remove keys of pretrained model that are not in our model (i.e., embeeding layer)
         model_dict = model.state_dict()
         if model_config["learn_speaker"]:
@@ -55,6 +75,8 @@ def get_model(args, configs, device, train=False):
         model.load_state_dict(ckpt["model"], strict=False)
         if model_config["learn_speaker"] and s <= model.state_dict()["speaker_emb.weight"].shape[0]:
             model.state_dict()["speaker_emb.weight"][:s, :] = speaker_emb_weight
+
+        print("{} loaded".format(ckpt_path))
 
     if train:
         scheduled_optim = ScheduledOptim(

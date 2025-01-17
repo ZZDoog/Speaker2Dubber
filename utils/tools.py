@@ -345,9 +345,14 @@ def synth_multi_samples(targets, predictions, vocoder, model_config, preprocess_
         #     duration_sp=predictions[4][i][-1]
         #     mel_len = mel_len-torch.round(torch.exp(duration_sp)-1)
         mel_prediction = predictions[1][i, :mel_len].detach().transpose(0, 1)
-        duration_sum = torch.sum(targets[11][i]).detach().cpu().numpy().item()
-        duration_prediction_sum = torch.sum(predictions[4][i]).detach().cpu().numpy().item()
-        cofs.append((duration_sum, duration_prediction_sum))
+
+        # duration_sum = torch.sum(targets[11][i]).detach().cpu().numpy().item()
+        # duration_prediction_sum = torch.sum(predictions[4][i]).detach().cpu().numpy().item()
+        # cofs.append((duration_sum, duration_prediction_sum))
+
+        # duration_sum = torch.sum(targets[11][i]).detach().cpu().numpy().item()
+        # duration_prediction_sum = torch.sum(predictions[4][i]).detach().cpu().numpy().item()
+        cofs.append((1, 1))
 
         if vocoder is not None:
             from .model import vocoder_infer
