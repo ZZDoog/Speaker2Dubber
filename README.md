@@ -18,7 +18,7 @@
 
 - [x] Update README.md (How to use).
 
-- [ ] Release the first-stage and second-stage pre-trained checkpoints.
+- [x] Release the pre-trained checkpoints on [Baidu Cloud Drive](https://pan.baidu.com/s/1T0ndIerg1jzPYi6L_kWO8A) (Password: 4ud3) and [Google Drive](https://drive.google.com/drive/folders/1VvGxkSYQ4yQFl4rs33lTVb5MBZXtXJFi?usp=sharing).
 
 ## 🌼 Environment
 
