@@ -6,6 +6,9 @@
 
 <img width="1000" alt="image" src="Figs\Speaker2Dubber.png">
 
+# News
+- [Feb. 2025] Our new paper on Movie Dubbing task: *Prosody-Enhanced Acoustic Pre-training and Acoustic-Disentangled Prosody Adapting for Movie Dubbing* is accepted by **CVPR2025** with better performance and higher acoustic quality. The [paper](https://arxiv.org/abs/2503.12042), [code](https://github.com/ZZDoog/ProDubber) and [demo](https://zzdoog.github.io/ProDubber/) are all available. 
+
 ## 🗒 TODOs
 
 - [x] Release Speaker2Dubber‘s demo at [here](https://speaker2dubber.github.io/).
@@ -58,8 +61,8 @@ The `s` denotes the inference setting (`1` for setting1 which use gt audio as re
 
 ## 📊 Dataset
 
-- GRID ([BaiduDrive](https://pan.baidu.com/s/1E4cPbDvw_Zfk3_F8qoM7JA) (code: GRID) / GoogleDrive)
-- V2C-Animation dataset (chenqi-Denoise2) 
+- GRID ([BaiduDrive](https://pan.baidu.com/s/1E4cPbDvw_Zfk3_F8qoM7JA) (code: GRID) /  [GoogleDrive](https://drive.google.com/drive/folders/1_z51hy6H3K4kyHy-MXtMfo2Py6edpscE?usp=drive_link))
+- V2C-Animation dataset ([BaiduDrive]( https://pan.baidu.com/s/12hEFbXwpv4JscG3tUffjbA) (code: k9mb) / [GoogleDrive](https://drive.google.com/drive/folders/11WhRulJd23XzeuWmUVay5carpudGq3ig?usp=drive_link))
 
 
 
