@@ -61,7 +61,7 @@ The `s` denotes the inference setting (`1` for setting1 which use gt audio as re
 
 ## 📊 Dataset
 
-- GRID ([BaiduDrive](https://pan.baidu.com/s/1E4cPbDvw_Zfk3_F8qoM7JA) (code: GRID) /  [GoogleDrive](https://drive.google.com/drive/folders/1_z51hy6H3K4kyHy-MXtMfo2Py6edpscE?usp=drive_link))
+- GRID dataset ([BaiduDrive](https://pan.baidu.com/s/1E4cPbDvw_Zfk3_F8qoM7JA) (code: GRID) /  [GoogleDrive](https://drive.google.com/drive/folders/1_z51hy6H3K4kyHy-MXtMfo2Py6edpscE?usp=drive_link))
 - V2C-Animation dataset ([BaiduDrive]( https://pan.baidu.com/s/12hEFbXwpv4JscG3tUffjbA) (code: k9mb) / [GoogleDrive](https://drive.google.com/drive/folders/11WhRulJd23XzeuWmUVay5carpudGq3ig?usp=drive_link))
 
 
